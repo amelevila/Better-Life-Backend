@@ -1,0 +1,20 @@
+[project]
+name = "better_life_backend"
+version = "1.0.0"
+requires-python = "==3.14.*"
+dependencies = [
+    "Django~=5.1.2",
+    "django-extensions",
+    "djangorestframework",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-django",
+    "pytest-cov",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "better_life_backend.settings"
+python_files = ["test_*.py", "*_test.py"]
