@@ -2,3 +2,4 @@
 max-line-length = 99
 ignore = W503
 exclude = */migrations/*
+extend-ignore = DJ

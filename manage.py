@@ -1,14 +1,11 @@
-#!/usr/bin/env python
 import os
 import sys
 
 
-def main() -> int:
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "fitter_app_backend.settings")
-    os.environ.setdefault("DJANGO_CONFIGURATION", "Local")
-
+def main():
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "better_life_backend.settings")
     try:
-        from configurations.management import execute_from_command_line
+        from django.core.management import execute_from_command_line
     except ImportError as exc:
         raise ImportError(
             "Couldn't import Django. Are you sure it's installed and "
@@ -17,8 +14,6 @@ def main() -> int:
         ) from exc
     execute_from_command_line(sys.argv)
 
-    return 0
-
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
