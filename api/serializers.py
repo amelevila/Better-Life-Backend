@@ -1,9 +1,52 @@
+from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
+from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from better_life_backend.db.models import BodyMetrics
 from better_life_backend.db.models import UserAccount
 from better_life_backend.db.models import UserProfile
+
+
+class TokenObtainSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        try:
+            user = UserAccount.objects.get(email=attrs["email"], is_active=True)
+        except UserAccount.DoesNotExist:
+            raise serializers.ValidationError("Invalid credentials")
+
+        if not check_password(attrs["password"], user.password_hash):
+            raise serializers.ValidationError("Invalid credentials")
+
+        refresh = RefreshToken()
+        refresh["user_id"] = str(user.id)
+
+        return {
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+        }
+
+
+class TokenRefreshSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+    def validate(self, attrs):
+        try:
+            refresh = RefreshToken(attrs["refresh"])
+        except TokenError as e:
+            raise serializers.ValidationError(str(e))
+
+        try:
+            user_id = refresh["user_id"]
+            UserAccount.objects.get(id=user_id, is_active=True)
+        except KeyError, UserAccount.DoesNotExist:
+            raise serializers.ValidationError("User not found or inactive")
+
+        return {"access": str(refresh.access_token)}
 
 
 class UserAccountCreateSerializer(serializers.ModelSerializer):

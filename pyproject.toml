@@ -6,6 +6,7 @@ dependencies = [
     "Django~=5.1.2",
     "django-extensions",
     "djangorestframework",
+    "djangorestframework-simplejwt",
     "drf-spectacular[sidecar]",
     "gunicorn",
     "psycopg2-binary",

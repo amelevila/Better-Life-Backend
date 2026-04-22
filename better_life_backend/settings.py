@@ -116,6 +116,13 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",  # type: ignore
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "api.authentication.UserAccountJWTAuthentication",
+    ],
+}
+
+SIMPLE_JWT = {
+    "USER_ID_CLAIM": "user_id",
 }
 
 SPECTACULAR_SETTINGS = {

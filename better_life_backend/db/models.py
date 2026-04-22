@@ -40,6 +40,14 @@ class UserAccount(BaseModel):
     is_active = models.BooleanField(default=True)
     is_member = models.BooleanField(default=False)
 
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
     class Meta:
         db_table = "user_account"
 
