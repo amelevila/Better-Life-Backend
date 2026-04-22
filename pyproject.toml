@@ -6,6 +6,10 @@ dependencies = [
     "Django~=5.1.2",
     "django-extensions",
     "djangorestframework",
+    "drf-spectacular[sidecar]",
+    "gunicorn",
+    "psycopg2-binary",
+    "python-dotenv",
 ]
 
 [project.optional-dependencies]
