@@ -5,6 +5,8 @@ from drf_spectacular.views import SpectacularSwaggerView
 from .views import BodyMetricsCreateView
 from .views import BodyMetricsListView
 from .views import MeView
+from .views import TokenObtainView
+from .views import TokenRefreshView
 from .views import UserCreateView
 from .views import UserProfileCreateView
 from .views import UserProfileView
@@ -12,6 +14,8 @@ from .views import UserProfileView
 urlpatterns = [
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path("", SpectacularSwaggerView.as_view(url_name="schema"), name="docs"),
+    path("auth/token/", TokenObtainView.as_view(), name="token-obtain"),
+    path("auth/token/refresh/", TokenRefreshView.as_view(), name="token-refresh"),
     path("users/", UserCreateView.as_view(), name="user-create"),
     path("users/me/", MeView.as_view(), name="user-me"),
     path("users/me/profile/", UserProfileView.as_view(), name="user-profile"),

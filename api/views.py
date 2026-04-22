@@ -5,11 +5,33 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .serializers import BodyMetricsSerializer
+from .serializers import TokenObtainSerializer
+from .serializers import TokenRefreshSerializer
 from .serializers import UserAccountCreateSerializer
 from .serializers import UserAccountSerializer
 from .serializers import UserProfileSerializer
 from better_life_backend.db.models import BodyMetrics
 from better_life_backend.db.models import UserProfile
+
+
+# POST /auth/token/
+class TokenObtainView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = TokenObtainSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.validated_data)
+
+
+# POST /auth/token/refresh/
+class TokenRefreshView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = TokenRefreshSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.validated_data)
 
 
 # POST /users/
