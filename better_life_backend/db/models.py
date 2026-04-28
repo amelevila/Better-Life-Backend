@@ -56,6 +56,39 @@ class UserAccount(BaseModel):
 
 
 class UserProfile(BaseModel):
+    class ActivityLevel(models.TextChoices):
+        SEDENTARY = "sedentary", "Sedentary"
+        LIGHTLY_ACTIVE = "lightly_active", "Lightly Active"
+        MODERATELY_ACTIVE = "moderately_active", "Moderately Active"
+        VERY_ACTIVE = "very_active", "Very Active"
+        EXTRA_ACTIVE = "extra_active", "Extra Active"
+
+    class MainGoal(models.TextChoices):
+        LOSE_WEIGHT = "lose_weight", "Lose Weight"
+        GAIN_MUSCLE = "gain_muscle", "Gain Muscle"
+        MAINTAIN = "maintain", "Maintain"
+        IMPROVE_FITNESS = "improve_fitness", "Improve Fitness"
+        INCREASE_FLEXIBILITY = "increase_flexibility", "Increase Flexibility"
+
+    class FitnessLevel(models.TextChoices):
+        BEGINNER = "beginner", "Beginner"
+        INTERMEDIATE = "intermediate", "Intermediate"
+        ADVANCED = "advanced", "Advanced"
+
+    class TrainingLocation(models.TextChoices):
+        GYM = "gym", "Gym"
+        HOME = "home", "Home"
+        OUTDOOR = "outdoor", "Outdoor"
+        MIXED = "mixed", "Mixed"
+
+    class DietaryPreference(models.TextChoices):
+        OMNIVORE = "omnivore", "Omnivore"
+        VEGETARIAN = "vegetarian", "Vegetarian"
+        VEGAN = "vegan", "Vegan"
+        KETO = "keto", "Keto"
+        MEDITERRANEAN = "mediterranean", "Mediterranean"
+        OTHER = "other", "Other"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(
         UserAccount,
@@ -70,11 +103,69 @@ class UserProfile(BaseModel):
     date_of_birth = models.DateField(blank=True, null=True)
     profile_picture_url = models.TextField(blank=True, null=True)
 
+    # Fitness
+    activity_level = models.CharField(
+        max_length=20, choices=ActivityLevel.choices, blank=True, null=True
+    )
+    main_goal = models.CharField(
+        max_length=30, choices=MainGoal.choices, blank=True, null=True
+    )
+    fitness_level = models.CharField(
+        max_length=20, choices=FitnessLevel.choices, blank=True, null=True
+    )
+    training_days_per_week = models.IntegerField(blank=True, null=True)
+    workout_duration_minutes = models.IntegerField(blank=True, null=True)
+    training_location = models.CharField(
+        max_length=20, choices=TrainingLocation.choices, blank=True, null=True
+    )
+
+    # Nutrition
+    dietary_preference = models.CharField(
+        max_length=20, choices=DietaryPreference.choices, blank=True, null=True
+    )
+    meals_per_day = models.IntegerField(blank=True, null=True)
+    food_allergies = models.TextField(blank=True, null=True)
+
+    onboarding_completed = models.BooleanField(default=False)
+
     class Meta:
         db_table = "user_profile"
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+
+
+class UserHealthProfile(BaseModel):
+    class DiabetesType(models.TextChoices):
+        NONE = "none", "None"
+        TYPE1 = "type1", "Type 1"
+        TYPE2 = "type2", "Type 2"
+        PREDIABETES = "prediabetes", "Prediabetes"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(
+        UserAccount,
+        on_delete=models.CASCADE,
+        related_name="health_profile",
+    )
+    diabetes = models.CharField(
+        max_length=20,
+        choices=DiabetesType.choices,
+        default=DiabetesType.NONE,
+    )
+    hypertension = models.BooleanField(default=False)
+    heart_condition = models.BooleanField(default=False)
+    celiac_disease = models.BooleanField(default=False)
+    lactose_intolerance = models.BooleanField(default=False)
+    injuries = models.TextField(blank=True, null=True)
+    medications = models.TextField(blank=True, null=True)
+    other_conditions = models.TextField(blank=True, null=True)
+
+    class Meta:
+        db_table = "user_health_profile"
+
+    def __str__(self):
+        return f"HealthProfile({self.user.email})"
 
 
 class BodyMetrics(BaseModel):

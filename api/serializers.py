@@ -6,6 +6,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from better_life_backend.db.models import BodyMetrics
 from better_life_backend.db.models import UserAccount
+from better_life_backend.db.models import UserHealthProfile
 from better_life_backend.db.models import UserProfile
 
 
@@ -81,6 +82,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "gender",
             "date_of_birth",
             "profile_picture_url",
+            "activity_level",
+            "main_goal",
+            "fitness_level",
+            "training_days_per_week",
+            "workout_duration_minutes",
+            "training_location",
+            "dietary_preference",
+            "meals_per_day",
+            "food_allergies",
+            "onboarding_completed",
             "created_at",
             "updated_at",
         ]
@@ -88,12 +99,38 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context["request"].user
-        # si ya existe perfil lo actualiza, si no lo crea
         profile, _ = UserProfile.objects.update_or_create(
             user=user,
             defaults={**validated_data, "created_by": user, "updated_by": user},
         )
         return profile
+
+
+class UserHealthProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserHealthProfile
+        fields = [
+            "id",
+            "diabetes",
+            "hypertension",
+            "heart_condition",
+            "celiac_disease",
+            "lactose_intolerance",
+            "injuries",
+            "medications",
+            "other_conditions",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        health_profile, _ = UserHealthProfile.objects.update_or_create(
+            user=user,
+            defaults={**validated_data, "created_by": user, "updated_by": user},
+        )
+        return health_profile
 
 
 class BodyMetricsSerializer(serializers.ModelSerializer):
