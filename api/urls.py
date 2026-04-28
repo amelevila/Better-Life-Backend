@@ -8,6 +8,8 @@ from .views import MeView
 from .views import TokenObtainView
 from .views import TokenRefreshView
 from .views import UserCreateView
+from .views import UserHealthProfileCreateView
+from .views import UserHealthProfileView
 from .views import UserProfileCreateView
 from .views import UserProfileView
 
@@ -23,6 +25,16 @@ urlpatterns = [
         "users/me/profile/add/",
         UserProfileCreateView.as_view(),
         name="user-profile-add",
+    ),
+    path(
+        "users/me/health-profile/",
+        UserHealthProfileView.as_view(),
+        name="health-profile",
+    ),
+    path(
+        "users/me/health-profile/add/",
+        UserHealthProfileCreateView.as_view(),
+        name="health-profile-add",
     ),
     path(
         "users/me/body-metrics/",

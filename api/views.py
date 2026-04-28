@@ -9,8 +9,10 @@ from .serializers import TokenObtainSerializer
 from .serializers import TokenRefreshSerializer
 from .serializers import UserAccountCreateSerializer
 from .serializers import UserAccountSerializer
+from .serializers import UserHealthProfileSerializer
 from .serializers import UserProfileSerializer
 from better_life_backend.db.models import BodyMetrics
+from better_life_backend.db.models import UserHealthProfile
 from better_life_backend.db.models import UserProfile
 
 
@@ -81,7 +83,43 @@ class UserProfileCreateView(APIView):
         )
 
 
-# POST /users/me/body-metrics/
+# GET /users/me/health-profile/
+class UserHealthProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        try:
+            health_profile = request.user.health_profile
+        except UserHealthProfile.DoesNotExist:
+            return Response(
+                {"detail": "El usuario aún no tiene perfil de salud."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        serializer = UserHealthProfileSerializer(
+            health_profile, context={"request": request}
+        )
+        return Response(serializer.data)
+
+
+# POST /users/me/health-profile/add/
+class UserHealthProfileCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        serializer = UserHealthProfileSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        health_profile = serializer.save()
+        return Response(
+            UserHealthProfileSerializer(
+                health_profile, context={"request": request}
+            ).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+# POST /users/me/body-metrics/add/
 class BodyMetricsCreateView(generics.CreateAPIView):
     serializer_class = BodyMetricsSerializer
     permission_classes = [permissions.IsAuthenticated]
