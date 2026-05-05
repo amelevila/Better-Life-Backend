@@ -91,6 +91,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "dietary_preference",
             "meals_per_day",
             "food_allergies",
+            "favorite_foods",
+            "disliked_foods",
             "onboarding_completed",
             "created_at",
             "updated_at",

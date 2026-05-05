@@ -125,6 +125,8 @@ class UserProfile(BaseModel):
     )
     meals_per_day = models.IntegerField(blank=True, null=True)
     food_allergies = models.TextField(blank=True, null=True)
+    favorite_foods = models.TextField(blank=True, null=True)
+    disliked_foods = models.TextField(blank=True, null=True)
 
     onboarding_completed = models.BooleanField(default=False)
 
