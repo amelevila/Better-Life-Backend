@@ -1,5 +1,6 @@
 # Generate a personalised 4-week nutrition plan for a user based on their profile.
 import random
+import re
 from datetime import date
 from decimal import Decimal
 
@@ -96,8 +97,17 @@ def _macro_targets(
     return protein_g, carbs_g, fat_g
 
 
+def _parse_food_keywords(text: str | None) -> list[str]:
+    """Split a free-text food list into lowercase keywords."""
+    if not text:
+        return []
+    return [p.strip().lower() for p in re.split(r"[,;\n]+", text) if p.strip()]
+
+
 def _filter_recipes(meal_type: str, profile: UserProfile) -> list[Recipe]:
-    """Return recipes compatible with the user's dietary restrictions."""
+    """Return recipes compatible with the user's dietary restrictions and dislikes."""
+    from django.db.models import Q
+
     qs = Recipe.objects.filter(meal_type=meal_type)
 
     dietary = profile.dietary_preference or "omnivore"
@@ -127,6 +137,14 @@ def _filter_recipes(meal_type: str, profile: UserProfile) -> list[Recipe]:
     except Exception:
         pass
 
+    # Exclude recipes whose name matches any disliked food keyword
+    disliked = _parse_food_keywords(profile.disliked_foods)
+    if disliked:
+        exclude_q = Q()
+        for kw in disliked:
+            exclude_q |= Q(name__icontains=kw)
+        qs = qs.exclude(exclude_q)
+
     return list(qs)
 
 
@@ -134,12 +152,24 @@ def _pick_recipe(
     meal_type: str,
     pool: list[Recipe],
     exclude_this_week: set[int],
+    preferred_keywords: list[str] | None = None,
 ) -> Recipe | None:
-    """Pick a recipe not used this week, or any if all were used."""
+    """Pick a recipe preferring favorites, avoiding weekly repeats."""
     available = [r for r in pool if r.pk not in exclude_this_week]
     if not available:
         available = pool
-    return random.choice(available) if available else None
+    if not available:
+        return None
+    # Prefer recipes whose name matches a favourite food keyword
+    if preferred_keywords:
+        preferred = [
+            r
+            for r in available
+            if any(kw in r.name.lower() for kw in preferred_keywords)
+        ]
+        if preferred:
+            return random.choice(preferred)
+    return random.choice(available)
 
 
 def generate_nutrition_plan(user) -> NutritionPlan:
@@ -188,6 +218,10 @@ def generate_nutrition_plan(user) -> NutritionPlan:
     )
 
     slots = MEAL_SLOTS.get(meals_n, MEAL_SLOTS[3])
+    preferred_keywords = _parse_food_keywords(
+        profile.favorite_foods if profile else None
+    )
+
     # Pre-build recipe pools per meal type
     pools: dict[str, list[Recipe]] = {}
     for slot in set(slots):
@@ -225,7 +259,7 @@ def generate_nutrition_plan(user) -> NutritionPlan:
 
             for order, slot in enumerate(slots):
                 pool = pools.get(slot, [])
-                recipe = _pick_recipe(slot, pool, week_used[slot])
+                recipe = _pick_recipe(slot, pool, week_used[slot], preferred_keywords)
                 if not recipe:
                     continue
 
