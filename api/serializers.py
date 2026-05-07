@@ -5,9 +5,15 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from better_life_backend.db.models import BodyMetrics
+from better_life_backend.db.models import DailyRoutine
+from better_life_backend.db.models import Exercise
+from better_life_backend.db.models import RoutineExercise
+from better_life_backend.db.models import TrainingPlan
 from better_life_backend.db.models import UserAccount
 from better_life_backend.db.models import UserHealthProfile
 from better_life_backend.db.models import UserProfile
+from better_life_backend.db.models import WeeklyPlan
+from better_life_backend.db.models import WorkoutRating
 
 
 class TokenObtainSerializer(serializers.Serializer):
@@ -156,3 +162,125 @@ class BodyMetricsSerializer(serializers.ModelSerializer):
             updated_by=user,
             **validated_data,
         )
+
+
+# ── Training ──────────────────────────────────────────────────────────────────
+
+
+class ExerciseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Exercise
+        fields = [
+            "id",
+            "name",
+            "description",
+            "muscle_group",
+            "exercise_type",
+            "difficulty",
+            "equipment",
+        ]
+
+
+class RoutineExerciseSerializer(serializers.ModelSerializer):
+    exercise = ExerciseSerializer(read_only=True)
+
+    class Meta:
+        model = RoutineExercise
+        fields = [
+            "id",
+            "order",
+            "sets",
+            "reps",
+            "duration_seconds",
+            "rest_seconds",
+            "exercise",
+        ]
+
+
+class DailyRoutineSerializer(serializers.ModelSerializer):
+    routine_exercises = RoutineExerciseSerializer(many=True, read_only=True)
+    is_completed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DailyRoutine
+        fields = [
+            "id",
+            "day_of_week",
+            "name",
+            "is_rest_day",
+            "is_completed",
+            "routine_exercises",
+        ]
+
+    def get_is_completed(self, obj):
+        request = self.context.get("request")
+        if not request:
+            return False
+        return obj.ratings.filter(user=request.user).exists()
+
+
+class WeeklyPlanSerializer(serializers.ModelSerializer):
+    daily_routines = DailyRoutineSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = WeeklyPlan
+        fields = ["id", "week_number", "daily_routines"]
+
+
+class TrainingPlanSerializer(serializers.ModelSerializer):
+    weekly_plans = WeeklyPlanSerializer(many=True, read_only=True)
+    current_week = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TrainingPlan
+        fields = [
+            "id",
+            "name",
+            "goal",
+            "fitness_level",
+            "weeks_duration",
+            "intensity_level",
+            "is_active",
+            "generated_at",
+            "current_week",
+            "weekly_plans",
+        ]
+
+    def get_current_week(self, obj):
+        from api.services.training_generator import current_week_number
+
+        return current_week_number(obj)
+
+
+class WorkoutRatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkoutRating
+        fields = [
+            "id",
+            "daily_routine",
+            "rating",
+            "intensity_feedback",
+            "completed_at",
+            "notes",
+        ]
+        read_only_fields = ["id", "completed_at"]
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        rating = WorkoutRating.objects.create(
+            user=user,
+            created_by=user,
+            updated_by=user,
+            **validated_data,
+        )
+        # Adjust plan intensity based on feedback
+        plan = TrainingPlan.objects.filter(user=user, is_active=True).first()
+        if plan:
+            feedback = validated_data.get("intensity_feedback", "same")
+            if feedback == WorkoutRating.IntensityFeedback.MORE:
+                plan.intensity_level = min(5, plan.intensity_level + 1)
+            elif feedback == WorkoutRating.IntensityFeedback.LESS:
+                plan.intensity_level = max(1, plan.intensity_level - 1)
+            plan.updated_by = user
+            plan.save(update_fields=["intensity_level", "updated_by", "updated_at"])
+        return rating
