@@ -2,8 +2,10 @@ from django.urls import path
 from drf_spectacular.views import SpectacularAPIView
 from drf_spectacular.views import SpectacularSwaggerView
 
+from .views import ActiveTrainingPlanView
 from .views import BodyMetricsCreateView
 from .views import BodyMetricsListView
+from .views import GenerateTrainingPlanView
 from .views import MeView
 from .views import TokenObtainView
 from .views import TokenRefreshView
@@ -12,6 +14,7 @@ from .views import UserHealthProfileCreateView
 from .views import UserHealthProfileView
 from .views import UserProfileCreateView
 from .views import UserProfileView
+from .views import WorkoutRatingCreateView
 
 urlpatterns = [
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
@@ -45,5 +48,20 @@ urlpatterns = [
         "users/me/body-metrics/add/",
         BodyMetricsCreateView.as_view(),
         name="body-metrics-create",
+    ),
+    path(
+        "training/plans/active/",
+        ActiveTrainingPlanView.as_view(),
+        name="training-plan-active",
+    ),
+    path(
+        "training/plans/generate/",
+        GenerateTrainingPlanView.as_view(),
+        name="training-plan-generate",
+    ),
+    path(
+        "training/ratings/",
+        WorkoutRatingCreateView.as_view(),
+        name="training-rating-create",
     ),
 ]

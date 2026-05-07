@@ -7,11 +7,14 @@ from rest_framework.views import APIView
 from .serializers import BodyMetricsSerializer
 from .serializers import TokenObtainSerializer
 from .serializers import TokenRefreshSerializer
+from .serializers import TrainingPlanSerializer
 from .serializers import UserAccountCreateSerializer
 from .serializers import UserAccountSerializer
 from .serializers import UserHealthProfileSerializer
 from .serializers import UserProfileSerializer
+from .serializers import WorkoutRatingSerializer
 from better_life_backend.db.models import BodyMetrics
+from better_life_backend.db.models import TrainingPlan
 from better_life_backend.db.models import UserHealthProfile
 from better_life_backend.db.models import UserProfile
 
@@ -135,3 +138,37 @@ class BodyMetricsListView(generics.ListAPIView):
             user=self.request.user,
             deleted_at__isnull=True,
         )
+
+
+# GET /training/plans/active/
+class ActiveTrainingPlanView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        plan = TrainingPlan.objects.filter(user=request.user, is_active=True).first()
+
+        if not plan:
+            from api.services.training_generator import generate_training_plan
+
+            plan = generate_training_plan(request.user)
+
+        serializer = TrainingPlanSerializer(plan, context={"request": request})
+        return Response(serializer.data)
+
+
+# POST /training/plans/generate/
+class GenerateTrainingPlanView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        from api.services.training_generator import generate_training_plan
+
+        plan = generate_training_plan(request.user)
+        serializer = TrainingPlanSerializer(plan, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+# POST /training/ratings/
+class WorkoutRatingCreateView(generics.CreateAPIView):
+    serializer_class = WorkoutRatingSerializer
+    permission_classes = [permissions.IsAuthenticated]
