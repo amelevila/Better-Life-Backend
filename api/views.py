@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .serializers import BodyMetricsSerializer
+from .serializers import NutritionPlanSerializer
 from .serializers import TokenObtainSerializer
 from .serializers import TokenRefreshSerializer
 from .serializers import TrainingPlanSerializer
@@ -14,6 +15,7 @@ from .serializers import UserHealthProfileSerializer
 from .serializers import UserProfileSerializer
 from .serializers import WorkoutRatingSerializer
 from better_life_backend.db.models import BodyMetrics
+from better_life_backend.db.models import NutritionPlan
 from better_life_backend.db.models import TrainingPlan
 from better_life_backend.db.models import UserHealthProfile
 from better_life_backend.db.models import UserProfile
@@ -172,3 +174,31 @@ class GenerateTrainingPlanView(APIView):
 class WorkoutRatingCreateView(generics.CreateAPIView):
     serializer_class = WorkoutRatingSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+
+# GET /nutrition/plans/active/
+class ActiveNutritionPlanView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        plan = NutritionPlan.objects.filter(user=request.user, is_active=True).first()
+
+        if not plan:
+            from api.services.nutrition_generator import generate_nutrition_plan
+
+            plan = generate_nutrition_plan(request.user)
+
+        serializer = NutritionPlanSerializer(plan, context={"request": request})
+        return Response(serializer.data)
+
+
+# POST /nutrition/plans/generate/
+class GenerateNutritionPlanView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        from api.services.nutrition_generator import generate_nutrition_plan
+
+        plan = generate_nutrition_plan(request.user)
+        serializer = NutritionPlanSerializer(plan, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

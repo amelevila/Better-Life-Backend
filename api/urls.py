@@ -2,9 +2,11 @@ from django.urls import path
 from drf_spectacular.views import SpectacularAPIView
 from drf_spectacular.views import SpectacularSwaggerView
 
+from .views import ActiveNutritionPlanView
 from .views import ActiveTrainingPlanView
 from .views import BodyMetricsCreateView
 from .views import BodyMetricsListView
+from .views import GenerateNutritionPlanView
 from .views import GenerateTrainingPlanView
 from .views import MeView
 from .views import TokenObtainView
@@ -63,5 +65,15 @@ urlpatterns = [
         "training/ratings/",
         WorkoutRatingCreateView.as_view(),
         name="training-rating-create",
+    ),
+    path(
+        "nutrition/plans/active/",
+        ActiveNutritionPlanView.as_view(),
+        name="nutrition-plan-active",
+    ),
+    path(
+        "nutrition/plans/generate/",
+        GenerateNutritionPlanView.as_view(),
+        name="nutrition-plan-generate",
     ),
 ]

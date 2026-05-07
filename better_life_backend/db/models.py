@@ -125,6 +125,8 @@ class UserProfile(BaseModel):
     )
     meals_per_day = models.IntegerField(blank=True, null=True)
     food_allergies = models.TextField(blank=True, null=True)
+    favorite_foods = models.TextField(blank=True, null=True)
+    disliked_foods = models.TextField(blank=True, null=True)
 
     onboarding_completed = models.BooleanField(default=False)
 
@@ -157,6 +159,10 @@ class UserHealthProfile(BaseModel):
     heart_condition = models.BooleanField(default=False)
     celiac_disease = models.BooleanField(default=False)
     lactose_intolerance = models.BooleanField(default=False)
+    nut_allergy = models.BooleanField(default=False)
+    egg_allergy = models.BooleanField(default=False)
+    shellfish_allergy = models.BooleanField(default=False)
+    soy_allergy = models.BooleanField(default=False)
     injuries = models.TextField(blank=True, null=True)
     medications = models.TextField(blank=True, null=True)
     other_conditions = models.TextField(blank=True, null=True)
@@ -371,3 +377,138 @@ class WorkoutRating(BaseModel):
 
     def __str__(self):
         return f"Rating {self.rating}/5 by {self.user.email}"
+
+
+class Recipe(BaseModel):
+    class MealType(models.TextChoices):
+        BREAKFAST = "breakfast", "Breakfast"
+        MORNING_SNACK = "morning_snack", "Morning Snack"
+        LUNCH = "lunch", "Lunch"
+        AFTERNOON_SNACK = "afternoon_snack", "Afternoon Snack"
+        DINNER = "dinner", "Dinner"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=200, unique=True)
+    description = models.TextField(blank=True)
+    meal_type = models.CharField(max_length=20, choices=MealType.choices)
+    serving_description = models.CharField(max_length=200, default="1 serving")
+
+    # Macros per serving
+    kcal = models.IntegerField()
+    protein_g = models.DecimalField(max_digits=6, decimal_places=1)
+    carbs_g = models.DecimalField(max_digits=6, decimal_places=1)
+    fat_g = models.DecimalField(max_digits=6, decimal_places=1)
+    fiber_g = models.DecimalField(max_digits=6, decimal_places=1, default=0)
+
+    # Dietary compatibility flags
+    is_vegan = models.BooleanField(default=False)
+    is_vegetarian = models.BooleanField(default=False)
+    is_gluten_free = models.BooleanField(default=False)
+    is_lactose_free = models.BooleanField(default=False)
+    is_keto = models.BooleanField(default=False)
+    is_mediterranean = models.BooleanField(default=False)
+    is_diabetic_friendly = models.BooleanField(default=False)
+
+    # Allergen flags
+    contains_nuts = models.BooleanField(default=False)
+    contains_eggs = models.BooleanField(default=False)
+    contains_shellfish = models.BooleanField(default=False)
+    contains_soy = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = "recipe"
+
+    def __str__(self):
+        return self.name
+
+
+class NutritionPlan(BaseModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(
+        UserAccount,
+        on_delete=models.CASCADE,
+        related_name="nutrition_plans",
+    )
+    name = models.CharField(max_length=200)
+    goal = models.CharField(max_length=30)
+    weeks_duration = models.IntegerField(default=4)
+    daily_kcal_target = models.IntegerField()
+    daily_protein_g = models.IntegerField()
+    daily_carbs_g = models.IntegerField()
+    daily_fat_g = models.IntegerField()
+    is_active = models.BooleanField(default=True)
+    generated_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "nutrition_plan"
+
+    def __str__(self):
+        return f"{self.name} ({self.user.email})"
+
+
+class WeeklyNutritionPlan(BaseModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    nutrition_plan = models.ForeignKey(
+        NutritionPlan,
+        on_delete=models.CASCADE,
+        related_name="weekly_plans",
+    )
+    week_number = models.IntegerField()
+
+    class Meta:
+        db_table = "weekly_nutrition_plan"
+        ordering = ["week_number"]
+
+    def __str__(self):
+        return f"Week {self.week_number} — {self.nutrition_plan.name}"
+
+
+class DailyMealPlan(BaseModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    weekly_nutrition_plan = models.ForeignKey(
+        WeeklyNutritionPlan,
+        on_delete=models.CASCADE,
+        related_name="daily_meal_plans",
+    )
+    day_of_week = models.IntegerField()  # 1=Monday … 7=Sunday
+    total_kcal = models.IntegerField(default=0)
+    total_protein_g = models.DecimalField(max_digits=6, decimal_places=1, default=0)
+    total_carbs_g = models.DecimalField(max_digits=6, decimal_places=1, default=0)
+    total_fat_g = models.DecimalField(max_digits=6, decimal_places=1, default=0)
+
+    class Meta:
+        db_table = "daily_meal_plan"
+        ordering = ["day_of_week"]
+
+    def __str__(self):
+        return f"Day {self.day_of_week} — Week {self.weekly_nutrition_plan.week_number}"
+
+
+class MealEntry(BaseModel):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    daily_meal_plan = models.ForeignKey(
+        DailyMealPlan,
+        on_delete=models.CASCADE,
+        related_name="meal_entries",
+    )
+    recipe = models.ForeignKey(
+        Recipe,
+        on_delete=models.CASCADE,
+        related_name="meal_entries",
+    )
+    meal_type = models.CharField(max_length=20, choices=Recipe.MealType.choices)
+    order = models.IntegerField(default=0)
+    serving_multiplier = models.DecimalField(
+        max_digits=4, decimal_places=2, default=1.0
+    )
+    kcal = models.IntegerField()
+    protein_g = models.DecimalField(max_digits=6, decimal_places=1)
+    carbs_g = models.DecimalField(max_digits=6, decimal_places=1)
+    fat_g = models.DecimalField(max_digits=6, decimal_places=1)
+
+    class Meta:
+        db_table = "meal_entry"
+        ordering = ["order"]
+
+    def __str__(self):
+        return f"{self.recipe.name} ({self.meal_type})"

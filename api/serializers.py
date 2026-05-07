@@ -5,13 +5,18 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from better_life_backend.db.models import BodyMetrics
+from better_life_backend.db.models import DailyMealPlan
 from better_life_backend.db.models import DailyRoutine
 from better_life_backend.db.models import Exercise
+from better_life_backend.db.models import MealEntry
+from better_life_backend.db.models import NutritionPlan
+from better_life_backend.db.models import Recipe
 from better_life_backend.db.models import RoutineExercise
 from better_life_backend.db.models import TrainingPlan
 from better_life_backend.db.models import UserAccount
 from better_life_backend.db.models import UserHealthProfile
 from better_life_backend.db.models import UserProfile
+from better_life_backend.db.models import WeeklyNutritionPlan
 from better_life_backend.db.models import WeeklyPlan
 from better_life_backend.db.models import WorkoutRating
 
@@ -97,6 +102,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "dietary_preference",
             "meals_per_day",
             "food_allergies",
+            "favorite_foods",
+            "disliked_foods",
             "onboarding_completed",
             "created_at",
             "updated_at",
@@ -122,6 +129,10 @@ class UserHealthProfileSerializer(serializers.ModelSerializer):
             "heart_condition",
             "celiac_disease",
             "lactose_intolerance",
+            "nut_allergy",
+            "egg_allergy",
+            "shellfish_allergy",
+            "soy_allergy",
             "injuries",
             "medications",
             "other_conditions",
@@ -284,3 +295,96 @@ class WorkoutRatingSerializer(serializers.ModelSerializer):
             plan.updated_by = user
             plan.save(update_fields=["intensity_level", "updated_by", "updated_at"])
         return rating
+
+
+# ── Nutrition ─────────────────────────────────────────────────────────────────
+
+
+class RecipeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = [
+            "id",
+            "name",
+            "description",
+            "meal_type",
+            "serving_description",
+            "kcal",
+            "protein_g",
+            "carbs_g",
+            "fat_g",
+            "fiber_g",
+            "is_vegan",
+            "is_vegetarian",
+            "is_gluten_free",
+            "is_lactose_free",
+        ]
+
+
+class MealEntrySerializer(serializers.ModelSerializer):
+    recipe = RecipeSerializer(read_only=True)
+
+    class Meta:
+        model = MealEntry
+        fields = [
+            "id",
+            "meal_type",
+            "order",
+            "serving_multiplier",
+            "kcal",
+            "protein_g",
+            "carbs_g",
+            "fat_g",
+            "recipe",
+        ]
+
+
+class DailyMealPlanSerializer(serializers.ModelSerializer):
+    meal_entries = MealEntrySerializer(many=True, read_only=True)
+
+    class Meta:
+        model = DailyMealPlan
+        fields = [
+            "id",
+            "day_of_week",
+            "total_kcal",
+            "total_protein_g",
+            "total_carbs_g",
+            "total_fat_g",
+            "meal_entries",
+        ]
+
+
+class WeeklyNutritionPlanSerializer(serializers.ModelSerializer):
+    daily_meal_plans = DailyMealPlanSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = WeeklyNutritionPlan
+        fields = ["id", "week_number", "daily_meal_plans"]
+
+
+class NutritionPlanSerializer(serializers.ModelSerializer):
+    weekly_plans = WeeklyNutritionPlanSerializer(many=True, read_only=True)
+    current_week = serializers.SerializerMethodField()
+
+    class Meta:
+        model = NutritionPlan
+        fields = [
+            "id",
+            "name",
+            "goal",
+            "weeks_duration",
+            "daily_kcal_target",
+            "daily_protein_g",
+            "daily_carbs_g",
+            "daily_fat_g",
+            "is_active",
+            "generated_at",
+            "current_week",
+            "weekly_plans",
+        ]
+
+    def get_current_week(self, obj):
+        from api.services.nutrition_generator import current_nutrition_week
+
+        return current_nutrition_week(obj)
