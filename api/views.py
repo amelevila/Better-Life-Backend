@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import generics
 from rest_framework import permissions
 from rest_framework import status
@@ -19,6 +21,8 @@ from better_life_backend.db.models import NutritionPlan
 from better_life_backend.db.models import TrainingPlan
 from better_life_backend.db.models import UserHealthProfile
 from better_life_backend.db.models import UserProfile
+
+logger = logging.getLogger("api")
 
 
 # POST /auth/token/
@@ -45,6 +49,10 @@ class TokenRefreshView(APIView):
 class UserCreateView(generics.CreateAPIView):
     serializer_class = UserAccountCreateSerializer
     permission_classes = [permissions.AllowAny]
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        logger.info("New user registered: %s", user.email)
 
 
 # GET /users/me/
@@ -150,6 +158,9 @@ class ActiveTrainingPlanView(APIView):
         plan = TrainingPlan.objects.filter(user=request.user, is_active=True).first()
 
         if not plan:
+            logger.info(
+                "No active training plan for %s — generating", request.user.email
+            )
             from api.services.training_generator import generate_training_plan
 
             plan = generate_training_plan(request.user)
@@ -184,6 +195,9 @@ class ActiveNutritionPlanView(APIView):
         plan = NutritionPlan.objects.filter(user=request.user, is_active=True).first()
 
         if not plan:
+            logger.info(
+                "No active nutrition plan for %s — generating", request.user.email
+            )
             from api.services.nutrition_generator import generate_nutrition_plan
 
             plan = generate_nutrition_plan(request.user)
