@@ -113,8 +113,10 @@ def _filter_recipes(meal_type: str, profile: UserProfile) -> list[Recipe]:
     dietary = profile.dietary_preference or "omnivore"
     if dietary == "vegan":
         qs = qs.filter(is_vegan=True)
-    elif dietary in ("vegetarian", "mediterranean"):
+    elif dietary == "vegetarian":
         qs = qs.filter(is_vegetarian=True)
+    elif dietary == "mediterranean":
+        qs = qs.filter(is_mediterranean=True)
     elif dietary == "keto":
         qs = qs.filter(is_keto=True)
 
