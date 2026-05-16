@@ -55,7 +55,7 @@ class TokenRefreshSerializer(serializers.Serializer):
         try:
             user_id = refresh["user_id"]
             UserAccount.objects.get(id=user_id, is_active=True)
-        except KeyError, UserAccount.DoesNotExist:
+        except (KeyError, UserAccount.DoesNotExist):
             raise serializers.ValidationError("User not found or inactive")
 
         return {"access": str(refresh.access_token)}

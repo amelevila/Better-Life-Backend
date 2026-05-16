@@ -3,16 +3,16 @@ from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 urlpatterns = [
-    # Envolvemos todo bajo el prefijo 'api/' para que Nginx conecte a la primera
+    # El panel de administración vuelve a la raíz para responder en /admin/
+    path('admin/', admin.site.urls),
+    
+    # Envolvemos la documentación y el conector de tus compañeros bajo /api/
     path('api/', include([
-        # Panel de administración
-        path('admin/', admin.site.urls),
-        
-        # Rutas de la documentación (Swagger) integradas en el prefijo
+        # Rutas de la documentación (Swagger)
         path('schema/', SpectacularAPIView.as_view(), name='schema'),
         path('', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
         
-        # El conector original de tus compañeros (¡así no rompemos nada!)
+        # El conector de tus compañeros
         path('', include('api.urls')),
     ])),
 ]
