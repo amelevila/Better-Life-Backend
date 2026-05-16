@@ -4,6 +4,7 @@ version = "1.0.0"
 requires-python = "==3.14.*"
 dependencies = [
     "Django~=5.1.2",
+    "django-cors-headers",
     "django-extensions",
     "djangorestframework",
     "djangorestframework-simplejwt",
@@ -11,6 +12,7 @@ dependencies = [
     "gunicorn",
     "psycopg2-binary",
     "python-dotenv",
+    "whitenoise",
 ]
 
 [project.optional-dependencies]
