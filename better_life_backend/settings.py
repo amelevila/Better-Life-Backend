@@ -18,7 +18,6 @@ DEBUG = os.environ.get("DEBUG", "True") == "True"
 _allowed = os.environ.get("ALLOWED_HOSTS", "*")
 ALLOWED_HOSTS = [h.strip() for h in _allowed.split(",")]
 
-
 # Application definition
 
 INSTALLED_APPS = [
